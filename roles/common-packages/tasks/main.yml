@@ -1,0 +1,67 @@
+---
+# tasks file for common-packages
+- name: Install EPEL
+  yum: name=epel-release state=latest update_cache=yes
+  when: ansible_distribution == "CentOS"
+
+- name: Install common essential packages for RHEL
+  yum: name={{ item }} state=latest
+  with_items:
+    - open-vm-tools
+    - mlocate
+    - net-tools
+    - telnet
+    - mailx
+    - postfix
+ 
+- name: Install dmesgt
+  copy:
+    src: files/dmesgt 
+    dest: /usr/sbin/dmesgt
+    owner: root
+    group: root
+    mode: 0754
+
+- name: Enable and start postfix
+  service: name=postfix enabled=yes state=started
+
+- name: Configure mailx
+  replace:
+    path: /etc/aliases
+    backup: yes
+    regexp: '^#root:.*$'
+    replace: 'root:     servicedesk@zumtobelgroup.com'
+
+- name: Update aliases
+  shell: >
+    newaliases
+
+- name: Configure postfix
+  lineinfile:
+    path: /etc/postfix/main.cf
+    line: 'transport_maps = hash:/etc/postfix/transport'
+    state: present
+
+- name: Add config to postfix transport
+  lineinfile:
+    path: /etc/postfix/transport
+    line: '*     smtp:hasmtp.zgrp.net'
+    state: present
+
+- name: Run postmap
+  shell: >
+    postmap hash:/etc/postfix/transport
+  notify: restart postfix
+
+- name: Update SSH configuration to be more secure.
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{ item.line }}"
+    state: present
+  with_items:
+    - regexp: "^PasswordAuthentication"
+      line: "PasswordAuthentication no"
+    - regexp: "^PermitRootLogin"
+      line: "PermitRootLogin no"
+  notify: restart ssh

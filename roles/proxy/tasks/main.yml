@@ -1,0 +1,11 @@
+---
+- hosts: test
+  user: root
+  
+  tasks:
+    - name: update yum config
+      lineinfile: dest=/etc/yum.conf
+                  line="proxy=http://146.108.8.18:3128"
+                  state=present
+    - name: update all packages
+      yum: name=* state=latest 

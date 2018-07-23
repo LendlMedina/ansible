@@ -1,0 +1,31 @@
+---
+- name: adding user 
+  user: 
+     name: solarwinds 
+     comment: "SolarWinds Monitoring User" 
+     shell: /bin/bash
+
+- name: Placing key
+  authorized_key: 
+     user: solarwinds
+     state: present
+     key: "{{ lookup('file', 'files/solarwinds.pub') }}"
+     
+- name: Make sure we have a 'wheel' group
+  group:
+     name: wheel
+     state: present
+
+- name: Allow 'wheel' group to have passwordless sudo
+  lineinfile:
+     dest: /etc/sudoers
+     state: present
+     regexp: '^%wheel'
+     line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+
+- name: Add sudoers user to wheel group
+  user:
+     name: "{{ item }}"
+     group: wheel
+     append: yes
+  with_items: "{{ sudoers }}"

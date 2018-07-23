@@ -1,0 +1,26 @@
+---
+- name: Install snmpd
+  yum: name={{ item }} state=latest update_cache=yes
+  with_items:
+    - net-snmp
+    - net-snmp-utils  
+  environment:
+    no_proxy: .org,.de,.at,.com,.net,.cz
+
+- name: Enable and start snmpd service
+  service: name=snmpd enabled=yes state=started
+
+- name: Enable firewalld
+  service: name=firewalld state=started enabled=yes
+
+- name: Add to snmpd to firewall
+  firewalld:
+    port: 161-162/udp
+    zone: trusted
+    state: enabled
+    permanent: true
+  notify: reload firewalld
+
+- name: Configure snmpd
+  template: src=templates/etc-snmp-snmpd-conf.j2 dest=/etc/snmp/snmpd.conf owner=root group=root mode=644 backup=yes
+  notify: Restart snmpd

@@ -1,0 +1,17 @@
+# Specifying a path directly
+- hosts: all
+  authorized_key:
+    user: root
+    key: "{{ lookup('file', item) }}"
+    state: absent
+  with_fileglob:
+    - blocked/*.pub
+
+- hosts: all
+  authorized_key:
+    user: root
+    key: "{{ lookup('file', item) }}"
+    state: present
+  with_items:
+    - "{{ globally_allowed_ssh_keys }} + {{ local_allowed_ssh_keys }}"
+

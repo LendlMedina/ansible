@@ -1,0 +1,7 @@
+---
+- name: yum repository
+  redhat_subscription:
+    state: present
+    username: ZumtobelAG
+    password: Onepiece07.
+    autosubscribe: true

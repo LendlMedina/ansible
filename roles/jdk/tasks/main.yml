@@ -1,0 +1,22 @@
+---
+  vars_prompt:
+
+    - name: "version"
+      prompt: "Enter JDK Version"
+      private: no
+
+    - name: "jdk_delete"
+      prompt: "JDK To Delete Version"
+      private: no
+
+  tasks:
+
+    - name: Extract jdk into /usr/java/
+      unarchive:
+       src: http://146.108.41.168/redhat/tomcat_source/{{version}}
+       dest: /usr/java
+
+    - name: Delete file
+      file:
+       path: /usr/java/{{jdk_delete}}
+       state: absent

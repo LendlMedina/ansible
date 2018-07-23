@@ -1,0 +1,5 @@
+# Specifying a path directly
+- hosts: all
+  tasks:
+  - fetch: src=/root/.ssh/authorized_keys dest=/root/ansible/auth-backup/auth-{{ ansible_hostname }} flat=yes
+

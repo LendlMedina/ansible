@@ -1,0 +1,33 @@
+---
+- name: Check if there are packages available to be installed or upgraded
+  command: /usr/lib/update-notifier/apt-check --package-names
+  register: packages
+
+- name: Upgrade all packages to the latest version
+  apt: update_cache=yes upgrade=dist autoclean=yes autoremove=yes
+  when: packages.stderr != ""
+
+- name: Check if a reboot is required
+  register: file
+  stat: path=/var/run/reboot-required get_md5=no
+
+- name: Reboot system
+  command: /sbin/reboot removes=/var/run/reboot-required
+  async: 0
+  poll: 0
+  when: file.stat.exists == true
+  register: reboot_started
+
+- name: Pause for 180 secs
+  pause:
+    minutes: 3
+
+- name: Wait for server to get back up 
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      port=22
+      delay=15
+      timeout=300
+      state=started
+  when: reboot_started|changed

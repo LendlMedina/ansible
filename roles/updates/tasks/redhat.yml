@@ -1,0 +1,38 @@
+---
+- name: Upgrade all packages
+  yum: disable_gpg_check=yes name='*' state=latest skip_broken=yes update_cache=yes
+
+# this task is to check if kernel was updated
+
+- name: Check if kernel was updated
+  shell: KERNEL_NEW=$(rpm -q --last kernel |head -1 | awk '{print $1}' | sed 's/kernel-//'); KERNEL_NOW=$(uname -r); if [[ $KERNEL_NEW != $KERNEL_NOW ]]; then echo "reboot_needed"; else echo "reboot_not_needed"; fi
+  ignore_errors: true
+  register: reboot_required
+
+# this task is to restart the system
+
+- name: Reboot system
+  command: shutdown -r +1 "Rebooting System after Patching"
+  async: 0
+  poll: 0
+  when: reboot_required.stdout == "reboot_needed"
+  register: reboot_started
+  ignore_errors: true
+
+# this task is to wait for 3 minutues for system to come up after the reboot
+
+- name: Pause script for 180 seconds
+  pause:
+    minutes: 3
+
+# this task is to confirm,system is up and responding to ssh
+
+- name: Check if system responds to ssh
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      port=22
+      delay=15
+      timeout=300
+      state=started
+  when: reboot_started|changed

@@ -1,0 +1,5 @@
+---
+# vars file for roles/tomcat
+
+jdk_version: jdk-8u92
+tomcat_version: apache-tomcat-8.0.36

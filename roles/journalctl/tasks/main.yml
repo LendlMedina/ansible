@@ -1,0 +1,23 @@
+---
+- hosts: journalctl
+  user: root
+
+  tasks:
+  - name: Updating Retention journald.conf
+    lineinfile: dest=/etc/systemd/journald.conf line='MaxRetentionSec=2week' insertafter='EOF'
+
+  - name: Updating Max Storage journald.conf
+    lineinfile: dest=/etc/systemd/journald.conf line='MaxFileSec=2week' insertafter='EOF'
+
+  - name: Create Directory journalctl 
+  file:
+    path: /var/log/journal
+    state: directory
+    owner: root
+    group: systemd-journal
+    mode: 0775
+
+  - name: Reload service systemd-journald
+  systemd:
+    name: systemd-journald
+    state: reloaded 

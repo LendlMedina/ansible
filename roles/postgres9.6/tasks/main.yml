@@ -1,0 +1,30 @@
+---
+# tasks file for roles/postgres9.6
+- name: Copy repo file
+  copy:
+    src: files/pgdg-redhat96-9.6-3.noarch.rpm
+    dest: /tmp/pgdg-redhat96-9.6-3.noarch.rpm
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install repo for Postgres9.6
+  yum:
+    name: /tmp/pgdg-redhat96-9.6-3.noarch.rpm
+    state: present
+
+- name: Install Postgres DB and client
+  yum: name={{ item }} state=present
+  with_items:
+    - postgresql96
+    - postgresql96-server
+
+- name: Initiate and start database
+  shell: >
+    /usr/pgsql-9.6/bin/postgresql96-setup initdb
+    
+- name: Enable and start service
+  service: name=postgresql-9.6 enabled=yes state=started
+
+
+

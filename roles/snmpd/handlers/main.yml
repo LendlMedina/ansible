@@ -1,0 +1,7 @@
+---
+# handlers file for snmpd
+- name: Restart snmpd
+  service: name=snmpd state=restarted
+
+- name: reload firewalld
+  service: name=firewalld state=reloaded

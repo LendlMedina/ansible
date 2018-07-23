@@ -1,0 +1,55 @@
+---
+- hosts: "{{ hosts }}"
+  vars_prompt:
+    - name: "hosts"
+      prompt: "Which hosts would you like to setup?"
+      private: no
+
+  remote_user: root
+
+  tasks:
+    - name: yum subscription renew
+      command: subscription-manager register --username ZumtobelAG --password Onepiece07. --auto-attach --force 
+
+    - name: install virt-who
+      yum:
+        name: virt-who
+        state: latest
+
+    - name: create config for virt-who
+      blockinfile:
+        create: yes
+        dest: /etc/virt-who.d/config
+        content: |
+         [vmware]
+         type=esx
+         server=atdoagvc01.itiso.net
+         username=itiso.net\_ATDOAG_VC_Redhat_Su
+         encrypted_password=0df8fb6c4870c49f4860f5cf2c1d494c
+         owner=6736398
+         env=Library
+         hypervisor_id=hostname
+
+    - name: check virtwho are running and start on boot
+      service:
+        name: virt-who
+        state: started
+        enabled: yes
+---
+- hosts: "{{ hosts }}"
+  vars_prompt:
+    - name: "hosts"
+      prompt: "Which hosts would you like to setup?"
+      private: no
+
+  remote_user: root
+
+  tasks:
+    - name: yum subscription renew
+      command: subscription-manager register --username ZumtobelAG --password Onepiece07. --auto-attach --force
+
+    - name: install virt-who
+      yum:
+        name: virt-who
+        state: removed
+

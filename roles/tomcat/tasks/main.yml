@@ -1,0 +1,112 @@
+---
+#- hosts: "{{ hosts }}"
+#  vars_prompt:
+#    - name: "hosts"
+#      prompt: "Which hosts would you like to setup?"
+#      private: no
+
+- name: Install wget
+  yum: name=wget state=latest
+
+- name: Create file for wget proxy settings
+  blockinfile:
+    create: yes
+    dest: /root/.wgetrc
+    content: |
+      use_proxy=yes
+      http_proxy=146.108.8.18:3128
+
+- name: Create Tomcat group 
+  group:
+    name: tomcat
+    state: present 
+
+- name: Create Tomcat service user
+  user:
+    name: tomcat
+    group: tomcat
+    createhome: no
+    shell: /bin/nologin
+
+- name: Download Java runtime 8u92 RPM (non repository install)
+  get_url:
+    url: http://146.108.41.168/redhat/tomcat_source/{{ jdk_version }}-linux-x64.rpm
+    dest: /tmp
+
+- name: Install downloaded java runtime
+  yum:
+    name: /tmp/{{ jdk_version }}-linux-x64.rpm
+
+- name: Download and extract tomcat 8.0.36 TAR.GZ (non repository install)
+  unarchive:
+    src: http://146.108.41.168/redhat/tomcat_source/{{ tomcat_version}}.tar.gz
+    dest: /opt
+    copy: no
+
+- name: Create symlink from /opt/apache-tomcat-8.0.36 to /opt/tomcat
+  file:
+    src: /opt/{{ tomcat_version}}
+    dest: /opt/tomcat
+    state: link
+
+- name: Give tomcat user write access to the conf directory, and read access to the files in the directory /opt/tomcat
+  file:
+    path: /opt/tomcat/conf
+    group: tomcat
+    recurse: yes
+    mode: "g+rwx"
+
+- name: Make tomcat user owner of the webapps, work, temp, and logs
+  file: 
+    path: "{{ item }}" 
+    recurse: yes 
+    owner: tomcat
+  with_items:
+     - /opt/tomcat/webapps
+     - /opt/tomcat/work
+     - /opt/tomcat/temp
+     - /opt/tomcat/logs
+
+- name: Set tomcat autostart (systemd)
+  blockinfile:
+    create: yes
+    dest: /etc/systemd/system/tomcat.service
+    content: |
+     # Systemd unit file for tomcat
+     [Unit]
+     Description=Apache Tomcat Web Application Container
+     After=syslog.target network.target
+
+     [Service]
+     Type=forking
+
+     Environment=JAVA_HOME=/usr/java/latest/jre
+     Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+     Environment=CATALINA_HOME=/opt/tomcat
+     Environment=CATALINA_BASE=/opt/tomcat
+     Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+     Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+
+     ExecStart=/opt/tomcat/bin/startup.sh
+     ExecStop=/bin/kill -15 $MAINPID
+
+     User=tomcat
+     Group=tomcat
+
+     [Install]
+     WantedBy=multi-user.target
+
+- name: Check Tomcat are running and start on boot
+  service:
+     name: tomcat
+     state: started
+     enabled: yes
+
+- name: Add tomcat default ports to firewalld
+  firewalld:
+     port: 8080-8443/tcp
+     permanent: true
+     state: enabled
+
+
+
